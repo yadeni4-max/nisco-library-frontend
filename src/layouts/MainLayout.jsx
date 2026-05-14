@@ -1,8 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { logout, getRole } from "../utils/auth";
+import { logout, getRole, getUser } from "../utils/auth";
 
 function MainLayout({ children }) {
   const navigate = useNavigate();
+  
+  const user = getUser();
   const role = getRole();
 
   const handleLogout = () => {
@@ -14,12 +16,19 @@ function MainLayout({ children }) {
     <div className="flex min-h-screen">
 
       {/* Sidebar */}
-      <div className="w-64 bg-blue-800 text-white p-5">
+      <div className="w-64 bg-blue-800 text-white p-5 flex flex-col">
         <h1 className="text-2xl font-bold mb-8">
           Library Manager
         </h1>
 
-        <nav className="flex flex-col gap-4">
+        <div className="mb-6 p-3 bg-blue-700 rounded">
+        <p className="text-sm">👤 {user?.name || user?.email}</p>
+        <p className="text-xs text-blue-200">
+        Role: {role}
+        </p>
+        </div>
+
+        <nav className="flex flex-col gap-3 text-sm">
 
           {/* COMMON (Admin + Librarian) */}
           <Link to="/dashboard">Dashboard</Link>
@@ -45,6 +54,7 @@ function MainLayout({ children }) {
         >
           Logout
         </button>
+
       </div>
 
       {/* Main Content */}
