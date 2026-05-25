@@ -15,16 +15,22 @@ function Borrow() {
 
   const [selectedBorrowId, setSelectedBorrowId] = useState("");
 
-  const today = new Date();
+  /*const today = new Date();
 
   const due = new Date();
-  due.setDate(today.getDate() + 15);
+  due.setDate(today.getDate() + 15);*/
 
-  const [formData, setFormData] = useState({
+  /*const [formData, setFormData] = useState({
     book_id: "",
     member_id: "",
     due_date: due.toISOString().split("T")[0],
-  });
+  });*/
+
+  const [formData, setFormData] = useState({
+  book_id: "",
+  member_id: "",
+  due_date: "",
+});
 
   // FETCH DATA
   useEffect(() => {
@@ -92,14 +98,21 @@ function Borrow() {
       setShowBorrowModal(false);
 
       // RESET FORM
-      const newDue = new Date();
+      /*const newDue = new Date();
       newDue.setDate(new Date().getDate() + 15);
 
       setFormData({
         book_id: "",
         member_id: "",
         due_date: newDue.toISOString().split("T")[0],
-      });
+      });*/
+
+      // RESET FORM
+setFormData({
+  book_id: "",
+  member_id: "",
+  due_date: "",
+});
 
     } catch (error) {
 
@@ -366,18 +379,22 @@ function Borrow() {
 
               </div>
 
-              {/* DUE DATE */}
-              <div className="bg-gray-100 p-3 rounded">
+             {/* DUE DATE */}
+              <div>
 
-                <p className="text-sm text-gray-700">
+                <label className="block mb-1 font-semibold">
+                Return Date
+                </label>
 
-                  <span className="font-semibold">
-                    Due Date:
-                  </span>{" "}
-
-                  {formData.due_date}
-
-                </p>
+                <input
+                type="date"
+                name="due_date"
+                value={formData.due_date}
+                onChange={handleChange}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full border p-2 rounded"
+                required
+                />
 
               </div>
 
