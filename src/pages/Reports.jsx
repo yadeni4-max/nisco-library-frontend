@@ -5,67 +5,98 @@ import API from "../api/axios";
 function Reports() {
   const [overdueBooks, setOverdueBooks] = useState([]);
   const [popularGenres, setPopularGenres] = useState([]);
-  const [totalBorrows, setTotalBorrows] = useState(0);
-  const [avgDuration, setAvgDuration] = useState(0);
-  const [returnRate, setReturnRate] = useState(0);
+
+  const [summary, setSummary] = useState({
+    totalBorrowsThisMonth: 0,
+    averageBorrowDuration: 0,
+    returnRate: 0,
+  });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        // Overdue books
-        const overdueRes = await API.get("/borrow-records/reports/overdue");
+        // =========================
+        // FETCH DATA
+        // =========================
+        const [borrowsRes, genresRes, summaryRes] = await Promise.all([
+          API.get("/borrow-records"),
+          API.get("/borrow-records/reports/popular-genres"),
+          API.get("/borrow-records/reports/summary"),
+        ]);
 
-        // Popular genres
-        const genresRes = await API.get("/borrow-records/reports/popular-genres");
+        const borrows = borrowsRes.data || [];
 
-        // All borrows
-        const borrowsRes = await API.get("/borrow-records");
+        // =========================
+        // SAME LOGIC AS MEMBERS PAGE
+        // =========================
+        const overdue = borrows.filter(
+          (b) =>
+            !b.return_date &&
+            new Date(b.due_date) < new Date()
+        );
 
-        const borrows = borrowsRes.data;
+        setOverdueBooks(overdue);
 
-        // Overdue
-        setOverdueBooks(overdueRes.data);
+        // =========================
+        // POPULAR GENRES
+        // =========================
+        setPopularGenres(genresRes.data || []);
 
-        // Popular genres
-        setPopularGenres(genresRes.data);
+        // =========================
+        // SUMMARY DATA
+        // =========================
+        const summaryData = summaryRes.data || {};
+// =========================
+// FRONTEND AVERAGE DURATION FIX
+// =========================
+const returnedBooks = borrows.filter(
+  (b) =>
+    b.return_date &&
+    b.borrow_date
+);
 
-        // Total borrows this month
-        const now = new Date();
-        const thisMonth = borrows.filter((b) => {
-          const date = new Date(b.borrow_date);
-          return (
-            date.getMonth() === now.getMonth() &&
-            date.getFullYear() === now.getFullYear()
-          );
+let averageDays = 0;
+
+if (returnedBooks.length > 0) {
+
+  const totalDays = returnedBooks.reduce(
+    (sum, record) => {
+
+      const borrowDate = new Date(
+        record.borrow_date
+      );
+
+      const dueDate = new Date(
+        record.due_date
+      );
+
+      // SAME TECHNIQUE AS MEMBERS/BORROW
+      const diffDays =
+        (dueDate - borrowDate) /
+        (1000 * 60 * 60 * 24);
+
+      return sum + diffDays;
+
+    },
+    0
+  );
+
+  averageDays = (
+    totalDays / returnedBooks.length
+  ).toFixed(1);
+}
+
+        setSummary({
+          totalBorrowsThisMonth:
+            summaryData.totalBorrowsThisMonth || 0,
+
+          averageBorrowDuration: averageDays,
+
+          returnRate:
+            summaryData.returnRate || 0,
         });
-
-        setTotalBorrows(thisMonth.length);
-
-        // Average borrow duration
-        const completed = borrows.filter((b) => b.return_date);
-
-        const durations = completed.map((b) => {
-          const start = new Date(b.borrow_date);
-          const end = new Date(b.return_date);
-          return (end - start) / (1000 * 60 * 60 * 24);
-        });
-
-        const avg =
-          durations.length > 0
-            ? durations.reduce((a, b) => a + b, 0) / durations.length
-            : 0;
-
-        setAvgDuration(avg.toFixed(1));
-
-        // Return rate
-        const returned = borrows.filter((b) => b.return_date).length;
-        const rate =
-          borrows.length > 0
-            ? (returned / borrows.length) * 100
-            : 0;
-
-        setReturnRate(rate.toFixed(1));
 
       } catch (error) {
         console.error("Reports error:", error);
@@ -79,8 +110,10 @@ function Reports() {
 
   return (
     <MainLayout>
-      {/* HEADER */}
-      <h1 className="text-3xl font-bold">Reports</h1>
+      <h1 className="text-3xl font-bold">
+        Reports
+      </h1>
+
       <p className="text-gray-500 mb-6">
         Library analytics and reports
       </p>
@@ -95,9 +128,7 @@ function Reports() {
             <h2 className="text-xl font-bold text-red-600">
               Overdue Books
             </h2>
-            <p className="text-gray-500 mb-2">
-              Books that are past their due date
-            </p>
+
             <p className="text-3xl font-bold">
               {overdueBooks.length}
             </p>
@@ -108,16 +139,16 @@ function Reports() {
             <h2 className="text-xl font-bold text-blue-600">
               Popular Genres
             </h2>
-            <p className="text-gray-500 mb-2">
-              Most borrowed book genres
-            </p>
 
             <ul className="text-sm space-y-1">
-              {popularGenres.slice(0, 5).map((g, i) => (
-                <li key={i}>
-                  {g.genre_name} — {g.borrow_count}
-                </li>
-              ))}
+              {popularGenres
+                .slice(0, 5)
+                .map((g, i) => (
+                  <li key={i}>
+                    {g.genre_name || g.genre} —{" "}
+                    {g.borrow_count || g.count}
+                  </li>
+                ))}
             </ul>
           </div>
 
@@ -126,8 +157,9 @@ function Reports() {
             <h2 className="text-xl font-bold text-green-600">
               Total Borrows This Month
             </h2>
+
             <p className="text-3xl font-bold">
-              {totalBorrows}
+              {summary.totalBorrowsThisMonth}
             </p>
           </div>
 
@@ -136,11 +168,12 @@ function Reports() {
             <h2 className="text-xl font-bold text-purple-600">
               Average Borrow Duration
             </h2>
-            <p className="text-gray-500 mb-2">
-              In days
-            </p>
+
             <p className="text-3xl font-bold">
-              {avgDuration}
+              {summary.averageBorrowDuration}{" "}
+              <span className="text-lg">
+                Days
+              </span>
             </p>
           </div>
 
@@ -149,11 +182,9 @@ function Reports() {
             <h2 className="text-xl font-bold text-orange-600">
               Return Rate
             </h2>
-            <p className="text-gray-500 mb-2">
-              Percentage of returned books
-            </p>
+
             <p className="text-3xl font-bold">
-              {returnRate}%
+              {summary.returnRate}%
             </p>
           </div>
 
