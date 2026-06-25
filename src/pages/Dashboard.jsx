@@ -32,24 +32,27 @@ function Dashboard() {
         const members = membersRes.data;
         const borrows = borrowsRes.data;
 
-        // ✅ FIX 1: normalize today
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // ✅ BEST PRACTICE: normalize today's date (fix timezone issues)
+        const getToday = () => {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          return d;
+        };
 
-        // ✅ FIX 2: correct overdue logic
+        // ✅ FIXED OVERDUE LOGIC (robust + matches Borrow.jsx behavior)
         const overdueBorrows = borrows.filter((record) => {
           const dueDate = new Date(record.due_date);
           dueDate.setHours(0, 0, 0, 0);
 
           const isReturned = !!record.return_date;
 
-          return !isReturned && dueDate < today;
+          return !isReturned && dueDate < getToday();
         });
 
-        // active borrows (fixed field name)
+        // Active borrows
         const activeBorrows = borrows.filter((b) => !b.return_date);
 
-        // recent activity (fixed field names)
+        // Recent activity (FIXED field names)
         const sortedActivities = [...borrows]
           .sort(
             (a, b) =>
@@ -67,7 +70,7 @@ function Dashboard() {
           books: books.length,
           members: members.length,
           activeBorrows: activeBorrows.length,
-          overdue: overdueBorrows.length, // ✅ FIXED
+          overdue: overdueBorrows.length,
         });
 
         setRecentActivities(sortedActivities);
@@ -120,6 +123,7 @@ function Dashboard() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
           {(role === "admin" || role === "librarian") && (
             <button
               onClick={() => navigate("/borrow")}
@@ -206,17 +210,13 @@ function Dashboard() {
 
                   <p className="text-sm text-gray-400">
                     Borrowed:{" "}
-                    {new Date(
-                      activity.borrow_date
-                    ).toLocaleDateString()}
+                    {new Date(activity.borrow_date).toLocaleDateString()}
                   </p>
 
                   {activity.return_date && (
                     <p className="text-sm text-green-600">
                       Returned:{" "}
-                      {new Date(
-                        activity.return_date
-                      ).toLocaleDateString()}
+                      {new Date(activity.return_date).toLocaleDateString()}
                     </p>
                   )}
                 </div>
