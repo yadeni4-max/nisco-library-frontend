@@ -32,27 +32,32 @@ function Dashboard() {
         const members = membersRes.data;
         const borrows = borrowsRes.data;
 
-        // ✅ BEST PRACTICE: normalize today's date (fix timezone issues)
-        const getToday = () => {
-          const d = new Date();
-          d.setHours(0, 0, 0, 0);
-          return d;
-        };
+        // =========================
+        // 🔥 FIXED DATE LOGIC (MATCHES BORROW + MEMBERS)
+        // =========================
+        const today = new Date();
+        const todayNormalized = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
 
-        // ✅ FIXED OVERDUE LOGIC (robust + matches Borrow.jsx behavior)
         const overdueBorrows = borrows.filter((record) => {
           const dueDate = new Date(record.due_date);
-          dueDate.setHours(0, 0, 0, 0);
+
+          const dueNormalized = new Date(
+            dueDate.getFullYear(),
+            dueDate.getMonth(),
+            dueDate.getDate()
+          );
 
           const isReturned = !!record.return_date;
 
-          return !isReturned && dueDate < getToday();
+          return !isReturned && dueNormalized < todayNormalized;
         });
 
-        // Active borrows
         const activeBorrows = borrows.filter((b) => !b.return_date);
 
-        // Recent activity (FIXED field names)
         const sortedActivities = [...borrows]
           .sort(
             (a, b) =>
@@ -110,7 +115,9 @@ function Dashboard() {
 
         <div className="bg-white p-4 rounded shadow">
           <h2 className="text-gray-500">Overdue Books</h2>
-          <p className="text-2xl font-bold">{loading ? "..." : stats.overdue}</p>
+          <p className="text-2xl font-bold">
+            {loading ? "..." : stats.overdue}
+          </p>
         </div>
       </div>
 
