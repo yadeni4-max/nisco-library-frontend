@@ -28,15 +28,25 @@ function Dashboard() {
         const booksRes = await API.get("/books");
         const membersRes = await API.get("/members");
         const borrowsRes = await API.get("/borrow-records");
-        const overdueRes = await API.get("/borrow-records/reports/overdue");
+        
         const genresRes = await API.get("/borrow-records/reports/popular-genres");
 
         const books = booksRes.data;
         const members = membersRes.data;
         const borrows = borrowsRes.data;
-        const overdue = overdueRes.data;
 
-        const activeBorrows = borrows.filter((b) => !b.returnDate);
+        const today = new Date();
+
+      const overdueBorrows = borrows.filter((record) => {
+      const dueDate = new Date(record.due_date);
+
+      const isReturned = !!record.return_date;
+
+      return !isReturned && dueDate < today;
+      });
+        
+
+        const activeBorrows = borrows.filter((b) => !b.return_date);
 
         const sortedActivities = [...borrows]
         .sort(
@@ -52,11 +62,11 @@ function Dashboard() {
         }));
 
         setStats({
-          books: books.length,
-          members: members.length,
-          activeBorrows: activeBorrows.length,
-          overdue: overdue.length,
-        });
+  books: books.length,
+  members: members.length,
+  activeBorrows: activeBorrows.length,
+  overdue: overdueBorrows.length,
+});
         setRecentActivities(sortedActivities);
 
         setGenreData(formattedGenres);
@@ -208,15 +218,15 @@ function Dashboard() {
             <p className="text-sm text-gray-400">
               Borrowed:{" "}
               {new Date(
-                activity.borrowDate
+                activity.borrow_date
               ).toLocaleDateString()}
             </p>
 
-            {activity.returnDate && (
+            {activity.return_date && (
               <p className="text-sm text-green-600">
                 Returned:{" "}
                 {new Date(
-                  activity.returnDate
+                  activity.return_date
                 ).toLocaleDateString()}
               </p>
             )}
