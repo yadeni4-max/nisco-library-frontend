@@ -32,6 +32,8 @@ function Dashboard() {
         const members = membersRes.data;
         const borrows = borrowsRes.data;
 
+        console.log("BORROWS FROM DASHBOARD:", borrows);
+
         // =========================
         // 🔥 FIXED DATE LOGIC (MATCHES BORROW + MEMBERS)
         // =========================
